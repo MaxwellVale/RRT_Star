@@ -22,7 +22,6 @@ from matplotlib.patches import Ellipse
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-<<<<<<< HEAD
 # (startx, starty) = ( 1, 5)
 # (goalx,  goaly)  = (13, 7)
 
