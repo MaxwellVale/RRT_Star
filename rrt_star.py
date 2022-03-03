@@ -22,18 +22,18 @@ from matplotlib.patches import Ellipse
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-# (startx, starty) = ( 1, 5)
-# (goalx,  goaly)  = (13, 7)
+(startx, starty) = ( 1, 5)
+(goalx,  goaly)  = (13, 5)
 
 # (startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
-(startx, starty) = (7, 5)
-(goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
+# (startx, starty) = (7, 5)
+# (goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
 
 while (goalx, goaly) == (startx, starty):
     (goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
 
 dstep = 0.25
-Nmax  = 1000
+Nmax  = 2000
 
 # Generates random obstacles
 def generateObstacles():
@@ -41,7 +41,7 @@ def generateObstacles():
 
     num_obstacles = random.randint(50, 100)
 
-    print(num_obstacles)
+    # print(num_obstacles)
     while len(obstacles) < num_obstacles:
         triangle = []
         while len(triangle) < 3:
@@ -70,13 +70,13 @@ def generateObstacles():
 
 # obstacles = ()
 
-# obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
-#              (( 6, 5), ( 7, 7), ( 8, 5)),
-#              (( 6, 9), ( 8, 9), ( 8, 7)),
-#              ((10, 3), (11, 6), (12, 3)))
+obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
+             (( 6, 5), ( 7, 7), ( 8, 5)),
+             (( 6, 9), ( 8, 9), ( 8, 7)),
+             ((10, 3), (11, 6), (12, 3)))
 
 
-obstacles = generateObstacles()
+# obstacles = generateObstacles()
 ######################################################################
 #
 #   Visualization
@@ -229,14 +229,25 @@ def sample(startstate, goalstate, max_cost):
         a = max_cost / 2
         b = np.sqrt(max_cost**2 - cmin**2) / 2
         angle = np.arctan2((goalstate.y - startstate.y),(goalstate.x - startstate.x))
-        x1 = h - np.sqrt(a**2 + b**2 + (a**2 - b**2) * np.cos(2*angle)) / np.sqrt(2)
-        x2 = h + np.sqrt(a**2 + b**2 + (a**2 - b**2) * np.cos(2*angle)) / np.sqrt(2)
-        y1 = k - ((((a**2 - b**2)**2 * (-a**2 - b**2 + (a**2 - b**2) * np.cos(2*angle))) / (np.cos(4*angle) - 1)) * np.sin(2*angle)) / (a**2 - b**2)
-        y2 = k + ((((a**2 - b**2)**2 * (-a**2 - b**2 + (a**2 - b**2) * np.cos(2*angle))) / (np.cos(4*angle) - 1)) * np.sin(2*angle)) / (a**2 - b**2)
-        ellminx = min(x1, x2)
-        ellmaxx = max(x1, x2)
-        ellminy = min(y1, y2)
-        ellmaxy = max(y1, y2)
+        if angle % np.pi == 0:
+            ellminx = h - a
+            ellmaxx = h + a
+            ellminy = k - b
+            ellmaxy = k + b
+        elif angle % np.pi / 2 == 0:
+            ellminx = h - b
+            ellmaxx = h + b
+            ellminy = k - a
+            ellmaxy = k + a
+        else:
+            x1 = h - np.sqrt(a**2 + b**2 + (a**2 - b**2) * np.cos(2*angle)) / np.sqrt(2)
+            x2 = h + np.sqrt(a**2 + b**2 + (a**2 - b**2) * np.cos(2*angle)) / np.sqrt(2)
+            y1 = k - ((((a**2 - b**2)**2 * (-a**2 - b**2 + (a**2 - b**2) * np.cos(2*angle))) / (np.cos(4*angle) - 1)) * np.sin(2*angle)) / (a**2 - b**2)
+            y2 = k + ((((a**2 - b**2)**2 * (-a**2 - b**2 + (a**2 - b**2) * np.cos(2*angle))) / (np.cos(4*angle) - 1)) * np.sin(2*angle)) / (a**2 - b**2)
+            ellminx = min(x1, x2)
+            ellmaxx = max(x1, x2)
+            ellminy = min(y1, y2)
+            ellmaxy = max(y1, y2)
 
         while not found:
             state = State(random.uniform(ellminx, ellmaxx),
@@ -285,28 +296,28 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
             newnode = Node(newstate, nearestnode, draw=False)
             tree.append(newnode)
             k = K(tree)
-            if (len(tree) > k):
-                (dist, idx) = KNearestNeighbors(tree, k)
+            # print(len(tree))
+            # print(k)
+            (dist, idx) = KNearestNeighbors(tree, min(k, len(tree)-1))
 
-                # check each of the newnode's nearest neighbors if they can create a better path to newnode
-                newnear = nearestnode
-                mincost = newnode.creach
-                for i in idx:
-                    nearnode = tree[i]
-                    if nearnode.state.ConnectsTo(newstate) and nearnode.creach + math.sqrt(newstate.DistSquared(nearnode.state)) < mincost:
-                        # print("SHORTER PATH!")
-                        newnear = nearnode
-                        mincost = nearnode.creach + math.sqrt(newstate.DistSquared(nearnode.state))
-                tree[-1].parent = newnear
-                tree[-1].creach = mincost
-                tree[-1].Draw('r-', linewidth=1)
+            # check each of the newnode's nearest neighbors if they can create a better path to newnode
+            newnear = nearestnode
+            mincost = newnode.creach
+            for i in idx:
+                nearnode = tree[i]
+                if nearnode.state.ConnectsTo(newstate) and nearnode.creach + math.sqrt(newstate.DistSquared(nearnode.state)) < mincost:
+                    newnear = nearnode
+                    mincost = nearnode.creach + math.sqrt(newstate.DistSquared(nearnode.state))
+            tree[-1].parent = newnear
+            tree[-1].creach = mincost
+            tree[-1].Draw('r-', linewidth=1)
 
-                # check if a new path can be made through xnew to one of its nearest neighbors
-                for j in idx:
-                    nearnode = tree[i]
-                    if nearnode.state.ConnectsTo(newstate) and nearnode.creach + math.sqrt(newstate.DistSquared(nearnode.state)) < nearnode.creach:
-                        print("REWIRED")
-                        nearnode.parent = newnode
+            # check if a new path can be made through xnew to one of its nearest neighbors
+            for j in idx:
+                nearnode = tree[i]
+                if nearnode.state.ConnectsTo(newstate) and nearnode.creach + math.sqrt(newstate.DistSquared(nearnode.state)) < nearnode.creach:
+                    print("REWIRED")
+                    nearnode.parent = newnode
                 
             # Also try to connect the goal.
             if np.sqrt(newstate.DistSquared(goalstate)) < 2*dstep and newstate.ConnectsTo(goalstate):
@@ -326,7 +337,7 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                     best_sol = sols[0]
                     iters = 0
                     print("PATH COST REDUCED!")
-                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters > 3):
+                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters >= 3):
                     return best_sol
                 else:
                     # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, goalnode.creach / 2, np.sqrt(goalnode.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
