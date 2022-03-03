@@ -22,7 +22,50 @@ from matplotlib.patches import Ellipse
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-obstacles = ()
+(startx, starty) = ( 1, 5)
+(goalx,  goaly)  = (13, 7)
+
+dstep = 0.25
+Nmax  = 1000
+
+# Generates random obstacles
+def generateObstacles():
+    obstacles = []
+
+    num_obstacles = random.randint(1, 5)
+
+    while len(obstacles) < num_obstacles:
+        triangle = []
+        while len(triangle) < 3:
+            i = len(triangle)
+            point = (random.uniform(xmin, xmax), 
+                     random.uniform(ymin, ymax))
+            
+            for tri in obstacles:
+                while PointInTriangle(point, tri):
+                    point = (random.uniform(xmin, xmax), 
+                             random.uniform(ymin, ymax))
+                if i == 1:
+                    while SegmentCrossTriangle((triangle[i - 1], point), tri):
+                        point = (random.uniform(xmin, xmax), 
+                                 random.uniform(ymin, ymax))
+                elif i == 2:
+                    while SegmentCrossTriangle((triangle[i - 1], point), tri) \
+                      or SegmentCrossTriangle((triangle[0], point), tri):
+                        point = (random.uniform(xmin, xmax), 
+                                 random.uniform(ymin, ymax))
+            if point in triangle or point == (startx, starty) \
+                or point == (goalx, goaly):
+                continue
+            triangle.append(point)
+        if PointInTriangle((startx, starty), tuple(triangle)) or \
+           PointInTriangle((goalx, goaly), tuple(triangle)):
+               continue
+        obstacles.append(tuple(triangle))
+
+    return tuple(obstacles)
+
+# obstacles = ()
 
 # obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
 #              (( 6, 5), ( 7, 7), ( 8, 5)),
@@ -32,13 +75,8 @@ obstacles = ()
 # obstacles = (((6, 4.1), (6, 8), (8, 8), (8, 4.1)), 
 #              ((6, 2), (6, 3.9), (8, 3.9), (8, 2)))
 
-(startx, starty) = ( 1, 5)
-(goalx,  goaly)  = (13, 7)
-
-dstep = 0.25
-Nmax  = 1000
-
-
+obstacles = generateObstacles()
+print(obstacles)
 ######################################################################
 #
 #   Visualization
@@ -116,8 +154,10 @@ class State:
     # Check the local planner - whether this connects to another state.
     def ConnectsTo(self, other):
         for obst in obstacles:
-            if SegmentCrossBox(((self.x, self.y), (other.x, other.y)),
+            if SegmentCrossTriangle(((self.x, self.y), (other.x, other.y)),
                                     obst):
+            # if SegmentCrossBox(((self.x, self.y), (other.x, other.y)),
+            #                         obst):
                 return False
         return True
 
@@ -188,8 +228,10 @@ def sample(startstate, goalstate, max_cost):
         midpoint = ((startstate.x + goalstate.x) / 2, (startstate.y + goalstate.y) / 2)
         angle = np.arctan2((goalstate.y - startstate.y),(goalstate.x - startstate.x))
         while not found:
-            state = State(random.uniform(startstate.x - ((max_cost - cmin)/2), goalstate.x + ((max_cost - cmin)/2)),
-                          random.uniform(startstate.y - np.sqrt(max_cost**2 - cmin**2)/2, startstate.y + np.sqrt(max_cost**2 - cmin**2)/2))
+            state = State(random.uniform(startstate.x - ((max_cost - cmin)/2), 
+                                         goalstate.x + ((max_cost - cmin)/2)),
+                          random.uniform(startstate.y - np.sqrt(max_cost**2 - cmin**2)/2, 
+                                         startstate.y + np.sqrt(max_cost**2 - cmin**2)/2))
             if (((state.x - midpoint[0])*np.cos(angle) + (state.y - midpoint[1])*np.sin(angle)) ** 2 ) / (max_cost / 2)**2 + \
                 (((state.x - midpoint[0])*np.sin(angle) - (state.y - midpoint[1])*np.cos(angle)) ** 2) / (np.sqrt(max_cost**2 - cmin**2)/2)**2 <= 1:
                 found = True
