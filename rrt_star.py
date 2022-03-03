@@ -25,7 +25,8 @@ from matplotlib.patches import Ellipse
 # (startx, starty) = ( 1, 5)
 # (goalx,  goaly)  = (13, 7)
 
-(startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
+# (startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
+(startx, starty) = (7, 5)
 (goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
 
 while (goalx, goaly) == (startx, starty):
@@ -38,28 +39,24 @@ Nmax  = 1000
 def generateObstacles():
     obstacles = []
 
-    num_obstacles = random.randint(1, 5)
+    num_obstacles = random.randint(50, 100)
 
+    print(num_obstacles)
     while len(obstacles) < num_obstacles:
         triangle = []
         while len(triangle) < 3:
             i = len(triangle)
-            point = (random.uniform(xmin, xmax), 
-                     random.uniform(ymin, ymax))
-            
-            for tri in obstacles:
-                while PointInTriangle(point, tri):
-                    point = (random.uniform(xmin, xmax), 
-                             random.uniform(ymin, ymax))
-                if i == 1:
-                    while SegmentCrossTriangle((triangle[i - 1], point), tri):
-                        point = (random.uniform(xmin, xmax), 
-                                 random.uniform(ymin, ymax))
-                elif i == 2:
-                    while SegmentCrossTriangle((triangle[i - 1], point), tri) \
-                      or SegmentCrossTriangle((triangle[0], point), tri):
-                        point = (random.uniform(xmin, xmax), 
-                                 random.uniform(ymin, ymax))
+            size = 1
+            if i == 0:
+                point = (random.uniform(xmin, xmax), 
+                         random.uniform(ymin, ymax))
+            elif i == 1:
+                point = (triangle[i - 1][0] + random.uniform(0, size),
+                         triangle[i - 1][1] + random.uniform(0, size))
+            elif i == 2:
+                point = \
+                  (random.uniform(triangle[0][0] - size, triangle[1][0] + size),
+                   random.uniform(triangle[0][1] - size, triangle[1][1] + size))
             if point in triangle or point == (startx, starty) \
                 or point == (goalx, goaly):
                 continue
@@ -80,7 +77,6 @@ def generateObstacles():
 
 
 obstacles = generateObstacles()
-print(obstacles)
 ######################################################################
 #
 #   Visualization
