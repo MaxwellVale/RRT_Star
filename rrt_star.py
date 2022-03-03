@@ -10,6 +10,7 @@ import math
 
 from planarutils import *
 from sklearn.neighbors import KDTree
+from matplotlib.patches import Ellipse
 
 
 ######################################################################
@@ -21,18 +22,18 @@ from sklearn.neighbors import KDTree
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-# obstacles = ()
+obstacles = ()
 
 # obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
 #              (( 6, 5), ( 7, 7), ( 8, 5)),
 #              (( 6, 9), ( 8, 9), ( 8, 7)),
 #              ((10, 3), (11, 6), (12, 3)))
 
-obstacles = (((6, 4.1), (6, 8), (8, 8), (8, 4.1)), 
-             ((6, 2), (6, 3.9), (8, 3.9), (8, 2)))
+# obstacles = (((6, 4.1), (6, 8), (8, 8), (8, 4.1)), 
+#              ((6, 2), (6, 3.9), (8, 3.9), (8, 2)))
 
 (startx, starty) = ( 1, 5)
-(goalx,  goaly)  = (13, 5)
+(goalx,  goaly)  = (13, 7)
 
 dstep = 0.25
 Nmax  = 1000
@@ -185,19 +186,23 @@ def sample(startstate, goalstate, max_cost):
         found = False
         cmin = np.sqrt(startstate.DistSquared(goalstate))
         midpoint = ((startstate.x + goalstate.x) / 2, (startstate.y + goalstate.y) / 2)
+        angle = np.arctan2((goalstate.y - startstate.y),(goalstate.x - startstate.x))
         while not found:
             state = State(random.uniform(startstate.x - ((max_cost - cmin)/2), goalstate.x + ((max_cost - cmin)/2)),
                           random.uniform(startstate.y - np.sqrt(max_cost**2 - cmin**2)/2, startstate.y + np.sqrt(max_cost**2 - cmin**2)/2))
-            if ((state.x - midpoint[0]) ** 2 ) / (max_cost / 2)**2 + ((state.y - midpoint[1]) ** 2) / (np.sqrt(max_cost**2 - cmin**2)/2)**2 <= 1:
+            if (((state.x - midpoint[0])*np.cos(angle) + (state.y - midpoint[1])*np.sin(angle)) ** 2 ) / (max_cost / 2)**2 + \
+                (((state.x - midpoint[0])*np.sin(angle) - (state.y - midpoint[1])*np.cos(angle)) ** 2) / (np.sqrt(max_cost**2 - cmin**2)/2)**2 <= 1:
                 found = True
         return state
     else:
         return State(random.uniform(xmin, xmax),
                      random.uniform(ymin, ymax))
 
-def draw_ellipse(x, y, a, b):
-    t = np.linspace(0, 2*math.pi, 100)
-    plt.plot( x+a*np.cos(t) , y+b*np.sin(t), 'b-', linewidth=2)
+def draw_ellipse(s, g, a, b):
+    mid = ((s[0] + g[0]) / 2, (s[1] + g[1]) / 2)
+    angle = np.arctan2(g[1]-s[1], g[0]-s[0]) * 180 / np.pi
+    ell = Ellipse(mid, a, b, angle=angle, alpha=0.5)
+    plt.gca().add_artist(ell)
     plt.pause(0.001)
 
 
@@ -267,21 +272,11 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                         iters += 1
                 else:
                     best_sol = sols[0]
-                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters > 5):
-                    plt.cla()
-                    Visual = Visualization()
-                    # Show the start/goal states.
-                    startstate.Draw('ro')
-                    goalstate.Draw('ro')
-                    Visual.ShowFigure()
-                    node = best_sol
-                    while node.parent is not None:
-                        node.Draw('b-', linewidth=2)
-                        plt.plot(node.state.x, node.state.y, 'co', markersize=3)
-                        node = node.parent
+                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters > 3):
                     return best_sol
                 else:
-                    draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, goalnode.creach / 2, np.sqrt(goalnode.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
+                    # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, goalnode.creach / 2, np.sqrt(goalnode.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
+                    draw_ellipse((startx, starty), (goalx, goaly), goalnode.creach, np.sqrt(goalnode.creach ** 2 - startstate.DistSquared(goalstate)))
                     print("The next cost upper bound is", sols[0].creach)
                     input("Now sampling in informed subset\n")
                     plt.cla()
@@ -292,12 +287,15 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                     startstate.Draw('ro')
                     goalstate.Draw('ro')
                     Visual.ShowFigure()
-                    draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, best_sol.creach / 2, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
+                    # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, best_sol.creach / 2, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
+                    draw_ellipse((startx, starty), (goalx, goaly), best_sol.creach, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)))
 
 
         # Check whether we should abort (tree has gotten too large).
         if (len(tree) >= Nmax):
-            return None
+            if len(sols) == 0:
+                return None
+            return best_sol
 
 
 ######################################################################
@@ -335,7 +333,16 @@ def main():
         input("(hit return to exit)")
         return
     
-    
+    plt.cla()
+    Visual = Visualization()
+    # Show the start/goal states.
+    startstate.Draw('ro')
+    goalstate.Draw('ro')
+    Visual.ShowFigure()
+    while node.parent is not None:
+        node.Draw('b-', linewidth=2)
+        plt.plot(node.state.x, node.state.y, 'co', markersize=3)
+        node = node.parent
     print("PATH found after", len(tree),"samples")
     input("Press enter to exit")
     return
