@@ -33,7 +33,7 @@ while (goalx, goaly) == (startx, starty):
     (goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
 
 dstep = 0.25
-Nmax  = 1000
+Nmax  = 2000
 
 # Generates random obstacles
 def generateObstacles():
@@ -339,7 +339,7 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                     Visual = Visualization()
                     # Show the start/goal states.
                     startstate.Draw('ro')
-                    goalstate.Draw('ro')
+                    goalstate.Draw('bo')
                     Visual.ShowFigure()
                     # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, best_sol.creach / 2, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
                     draw_ellipse((startx, starty), (goalx, goaly), best_sol.creach, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)))
