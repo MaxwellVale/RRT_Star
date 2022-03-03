@@ -22,15 +22,15 @@ from matplotlib.patches import Ellipse
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-obstacles = ()
+# obstacles = ()
 
 # obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
 #              (( 6, 5), ( 7, 7), ( 8, 5)),
 #              (( 6, 9), ( 8, 9), ( 8, 7)),
 #              ((10, 3), (11, 6), (12, 3)))
 
-# obstacles = (((6, 4.1), (6, 8), (8, 8), (8, 4.1)), 
-#              ((6, 2), (6, 3.9), (8, 3.9), (8, 2)))
+obstacles = (((6, 4.1), (6, 8), (8, 8), (8, 4.1)), 
+             ((6, 2), (6, 3.9), (8, 3.9), (8, 2)))
 
 (startx, starty) = ( 1, 5)
 (goalx,  goaly)  = (13, 7)
@@ -185,13 +185,24 @@ def sample(startstate, goalstate, max_cost):
     if max_cost != np.Infinity:
         found = False
         cmin = np.sqrt(startstate.DistSquared(goalstate))
-        midpoint = ((startstate.x + goalstate.x) / 2, (startstate.y + goalstate.y) / 2)
+        (h, k) = ((startstate.x + goalstate.x) / 2, (startstate.y + goalstate.y) / 2)
+        a = max_cost / 2
+        b = np.sqrt(max_cost**2 - cmin**2) / 2
         angle = np.arctan2((goalstate.y - startstate.y),(goalstate.x - startstate.x))
+        x1 = h - np.sqrt(a**2 + b**2 + (a**2 - b**2) * np.cos(2*angle)) / np.sqrt(2)
+        x2 = h + np.sqrt(a**2 + b**2 + (a**2 - b**2) * np.cos(2*angle)) / np.sqrt(2)
+        y1 = k - ((((a**2 - b**2)**2 * (-a**2 - b**2 + (a**2 - b**2) * np.cos(2*angle))) / (np.cos(4*angle) - 1)) * np.sin(2*angle)) / (a**2 - b**2)
+        y2 = k + ((((a**2 - b**2)**2 * (-a**2 - b**2 + (a**2 - b**2) * np.cos(2*angle))) / (np.cos(4*angle) - 1)) * np.sin(2*angle)) / (a**2 - b**2)
+        ellminx = min(x1, x2)
+        ellmaxx = max(x1, x2)
+        ellminy = min(y1, y2)
+        ellmaxy = max(y1, y2)
+
         while not found:
-            state = State(random.uniform(startstate.x - ((max_cost - cmin)/2), goalstate.x + ((max_cost - cmin)/2)),
-                          random.uniform(startstate.y - np.sqrt(max_cost**2 - cmin**2)/2, startstate.y + np.sqrt(max_cost**2 - cmin**2)/2))
-            if (((state.x - midpoint[0])*np.cos(angle) + (state.y - midpoint[1])*np.sin(angle)) ** 2 ) / (max_cost / 2)**2 + \
-                (((state.x - midpoint[0])*np.sin(angle) - (state.y - midpoint[1])*np.cos(angle)) ** 2) / (np.sqrt(max_cost**2 - cmin**2)/2)**2 <= 1:
+            state = State(random.uniform(ellminx, ellmaxx),
+                          random.uniform(ellminy, ellmaxy))
+            if (((state.x - h)*np.cos(angle) + (state.y - k)*np.sin(angle)) ** 2) / a**2 + \
+               (((state.x - h)*np.sin(angle) - (state.y - k)*np.cos(angle)) ** 2) / b**2 <= 1:
                 found = True
         return state
     else:
@@ -269,9 +280,12 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                 sols.sort(key=lambda x: x.creach)
                 print("Solution found with cost =", goalnode.creach, "!")
                 if best_sol == sols[0]:
-                        iters += 1
+                    iters += 1
+                    print("PATH COST NOT REDUCED. Reverting back to last best solution...")
                 else:
                     best_sol = sols[0]
+                    iters = 0
+                    print("PATH COST REDUCED!")
                 if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters > 3):
                     return best_sol
                 else:
