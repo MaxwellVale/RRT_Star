@@ -22,8 +22,14 @@ from matplotlib.patches import Ellipse
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-(startx, starty) = ( 1, 5)
-(goalx,  goaly)  = (13, 7)
+# (startx, starty) = ( 1, 5)
+# (goalx,  goaly)  = (13, 7)
+
+(startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
+(goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
+
+while (goalx, goaly) == (startx, starty):
+    (goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
 
 dstep = 0.25
 Nmax  = 1000
@@ -358,7 +364,7 @@ def main():
     
     # Show the start/goal states.
     startstate.Draw('ro')
-    goalstate.Draw('ro')
+    goalstate.Draw('bo')
     Visual.ShowFigure()
     input("Showing basic world (hit return to continue)")
 
@@ -379,7 +385,7 @@ def main():
     Visual = Visualization()
     # Show the start/goal states.
     startstate.Draw('ro')
-    goalstate.Draw('ro')
+    goalstate.Draw('bo')
     Visual.ShowFigure()
     while node.parent is not None:
         node.Draw('b-', linewidth=2)
