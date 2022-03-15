@@ -22,15 +22,14 @@ from matplotlib.patches import Ellipse
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-(startx, starty) = ( 1, 5)
-(goalx,  goaly)  = (13, 5)
+# (startx, starty) = ( 1, 5)
+# (goalx,  goaly)  = (13, 5)
 
 # (startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
-# (startx, starty) = (7, 5)
-# (goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
-
+(startx, starty) = (7, 5)
+(goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
 while (goalx, goaly) == (startx, starty):
-    (goalx, goaly) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
+    (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
 
 dstep = 0.25
 Nmax  = 2000
@@ -70,13 +69,13 @@ def generateObstacles():
 
 # obstacles = ()
 
-obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
-             (( 6, 5), ( 7, 7), ( 8, 5)),
-             (( 6, 9), ( 8, 9), ( 8, 7)),
-             ((10, 3), (11, 6), (12, 3)))
+# obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
+#              (( 6, 5), ( 7, 7), ( 8, 5)),
+#              (( 6, 9), ( 8, 9), ( 8, 7)),
+#              ((10, 3), (11, 6), (12, 3)))
 
 
-# obstacles = generateObstacles()
+obstacles = generateObstacles()
 ######################################################################
 #
 #   Visualization
@@ -222,7 +221,10 @@ def K(tree):
     return math.floor(2 * math.e * math.log(len(tree)))
 
 def sample(startstate, goalstate, max_cost):
+    rand = random.random()
     if max_cost != np.Infinity:
+        if rand < 0.05:
+            return goalstate
         found = False
         cmin = np.sqrt(startstate.DistSquared(goalstate))
         (h, k) = ((startstate.x + goalstate.x) / 2, (startstate.y + goalstate.y) / 2)
@@ -257,6 +259,8 @@ def sample(startstate, goalstate, max_cost):
                 found = True
         return state
     else:
+        if rand < 0.15:
+            return goalstate
         return State(random.uniform(xmin, xmax),
                      random.uniform(ymin, ymax))
 
@@ -350,7 +354,7 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                     Visual = Visualization()
                     # Show the start/goal states.
                     startstate.Draw('ro')
-                    goalstate.Draw('ro')
+                    goalstate.Draw('bo')
                     Visual.ShowFigure()
                     # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, best_sol.creach / 2, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
                     draw_ellipse((startx, starty), (goalx, goaly), best_sol.creach, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)))
@@ -391,6 +395,7 @@ def main():
 
     # Execute the search (return the goal leaf node).
     node = RRT_Star(tree, startstate, goalstate, Nmax)
+    
 
     # Check the outcome
     if node is None:
@@ -404,11 +409,12 @@ def main():
     startstate.Draw('ro')
     goalstate.Draw('bo')
     Visual.ShowFigure()
+    cost = node.creach
     while node.parent is not None:
         node.Draw('b-', linewidth=2)
         plt.plot(node.state.x, node.state.y, 'co', markersize=3)
         node = node.parent
-    print("PATH found after", len(tree),"samples")
+    print("PATH found after", len(tree),"samples with cost =", cost)
     input("Press enter to exit")
     return
 
