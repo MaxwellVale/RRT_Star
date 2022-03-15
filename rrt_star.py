@@ -22,14 +22,14 @@ from matplotlib.patches import Ellipse
 (xmin, xmax) = (0, 14)
 (ymin, ymax) = (0, 10)
 
-# (startx, starty) = ( 1, 5)
-# (goalx,  goaly)  = (13, 5)
+(startx, starty) = ( 1, 5)
+(goalx,  goaly)  = (13, 5)
 
 # (startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
-(startx, starty) = (7, 5)
-(goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
-while (goalx, goaly) == (startx, starty):
-    (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
+# (startx, starty) = (7, 5)
+# (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
+# while (goalx, goaly) == (startx, starty):
+#     (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
 
 dstep = 0.25
 Nmax  = 2000
@@ -69,13 +69,13 @@ def generateObstacles():
 
 # obstacles = ()
 
-# obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
-#              (( 6, 5), ( 7, 7), ( 8, 5)),
-#              (( 6, 9), ( 8, 9), ( 8, 7)),
-#              ((10, 3), (11, 6), (12, 3)))
+obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
+             (( 6, 5), ( 7, 7), ( 8, 5)),
+             (( 6, 9), ( 8, 9), ( 8, 7)),
+             ((10, 3), (11, 6), (12, 3)))
 
 
-obstacles = generateObstacles()
+# obstacles = generateObstacles()
 ######################################################################
 #
 #   Visualization
@@ -193,6 +193,7 @@ class Node:
             plt.plot(self.state.x, self.state.y, 'go', markersize=2)
             plt.pause(0.001)
 
+    # Update creach
 #
 #   Connect the nearest neighbors
 #
@@ -341,7 +342,8 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                     best_sol = sols[0]
                     iters = 0
                     print("PATH COST REDUCED!")
-                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters >= 3):
+#                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters >= 3):
+                if True:
                     return best_sol
                 else:
                     # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, goalnode.creach / 2, np.sqrt(goalnode.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
@@ -366,7 +368,74 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                 return None
             return best_sol
 
+def PostProcess(gnode):
+    start = gnode # the "bottom" of the path
+    curr = gnode  # the current node you are considering
+    prev = gnode  # the previous "good" node that can connect
+   
+    while curr.parent is not None:
+        while curr is not None and curr.state.ConnectsTo(start.state):
+            prev = curr
+            curr = prev.parent
+        start.parent = prev
+        
+        # connect the rest of the paths
+        start = prev
+        curr = prev
 
+
+def RRT_Rect(tree, startstate, goalstate, Nmax, h, path):
+    while True:
+        # Tube sampling
+        targetstate = State(random.uniform(xmin, xmax), 
+                            random.uniform(ymin, ymax))
+
+        # Find the nearest node (node with state nearest the target state).
+        # This is inefficient (slow for large trees), but simple.
+        list = [(node.state.DistSquared(targetstate), node) for node in tree]
+        (d2, nearestnode)  = min(list)
+        d = np.sqrt(d2)
+        neareststate = nearestnode.state
+
+        # Determine the next state, a step size (dstep) away.
+        newstate = State(neareststate.x + dstep * (targetstate.x - neareststate.x) / np.sqrt(neareststate.DistSquared(targetstate)),
+                          neareststate.y + dstep * (targetstate.y - neareststate.y) / np.sqrt(neareststate.DistSquared(targetstate)))
+        # Check whether to attach (creating a new node).
+        if neareststate.ConnectsTo(newstate):
+            # Check whether newstate is within our segment tube
+            for node in path:
+                if PointNearSegment(h, newstate.Coordinates(), \
+                        (node.state.Coordinates(), \
+                         node.parent.state.Coordinates())):
+                    newnode = Node(newstate, nearestnode, draw=False)
+                    tree.append(newnode)
+                    k = K(tree)
+                    
+                    # Max is stupid
+                    (dist, idx) = KNearestNeighbors(tree, min(k, len(tree)-1))
+                    newnear = nearestnode
+                    mincost = newnode.creach
+                    for i in idx:
+                        nearnode = tree[i]
+                        if nearnode.state.ConnectsTo(newstate) and \
+                            nearnode.creach + \
+                            math.sqrt(newstate.DistSquared(nearnode.state)) < mincost:
+                            newnear = nearnode
+                            mincost = nearnode.creach + math.sqrt(newstate.DistSquared(nearnode.state))
+                    tree[-1].parent = newnear
+                    tree[-1].creach = mincost
+                    tree[-1].Draw('r-', linewidth=1)
+
+                    # Also try to connect the goal.
+                    if np.sqrt(newstate.DistSquared(goalstate)) < 2*dstep and \
+                            newstate.ConnectsTo(goalstate):
+                        goalnode = Node(goalstate, newnode)
+                        return goalnode
+                    break
+
+        # Check whether we should abort (tree has gotten too large).
+        if (len(tree) >= Nmax):
+            return 
 ######################################################################
 #
 #  Main Code
@@ -394,11 +463,11 @@ def main():
     tree = [Node(startstate, None)]
 
     # Execute the search (return the goal leaf node).
-    node = RRT_Star(tree, startstate, goalstate, Nmax)
+    gnode = RRT_Star(tree, startstate, goalstate, Nmax)
     
 
     # Check the outcome
-    if node is None:
+    if gnode is None:
         print("UNABLE TO FIND A PATH in", Nmax, "steps")
         input("(hit return to exit)")
         return
@@ -409,15 +478,54 @@ def main():
     startstate.Draw('ro')
     goalstate.Draw('bo')
     Visual.ShowFigure()
+    node = gnode
     cost = node.creach
     while node.parent is not None:
         node.Draw('b-', linewidth=2)
         plt.plot(node.state.x, node.state.y, 'co', markersize=3)
         node = node.parent
     print("PATH found after", len(tree),"samples with cost =", cost)
-    input("Press enter to exit")
-    return
+    input("Press enter to post-process")
+    
+    # Post Processing
+    # Sees if next node could be connected
+    PostProcess(gnode)
+    plt.cla()
+    Visual = Visualization()
+    # Show the start/goal states.
+    startstate.Draw('ro')
+    goalstate.Draw('bo')
+    Visual.ShowFigure()
+    node = gnode
+    path = []
+    while node.parent is not None:
+        path.append(node)
+        node.Draw('g-', linewidth=2)
+        plt.plot(node.state.x, node.state.y, 'co', markersize=3)
+        node = node.parent
+    print("POST PROCESSED PATH") 
+    input('Press enter to resample the optimal path')
 
-
+    print('length of path: ', len(path))
+    # "Tube" resampling of post-processed path
+    r = 0.5 # height of rectangle 
+    # Restart the tree
+    tree = [Node(startstate, None)]
+    gnode = RRT_Rect(tree, startstate, goalstate, Nmax, r, path)
+    plt.cla()
+    Visual = Visualization()
+    # Show the start/goal states.
+    startstate.Draw('ro')
+    goalstate.Draw('bo')
+    Visual.ShowFigure()
+    node = gnode
+    while node.parent is not None:
+        path.append(node)
+        node.Draw('g-', linewidth=2)
+        plt.plot(node.state.x, node.state.y, 'co', markersize=3)
+        node = node.parent
+    input('Press enter to quit')
+     
+     
 if __name__== "__main__":
     main()
