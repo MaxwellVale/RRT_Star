@@ -489,43 +489,71 @@ def main():
     
     # Post Processing
     # Sees if next node could be connected
-    PostProcess(gnode)
-    plt.cla()
-    Visual = Visualization()
-    # Show the start/goal states.
-    startstate.Draw('ro')
-    goalstate.Draw('bo')
-    Visual.ShowFigure()
-    node = gnode
-    path = []
-    while node.parent is not None:
-        path.append(node)
-        node.Draw('g-', linewidth=2)
-        plt.plot(node.state.x, node.state.y, 'co', markersize=3)
-        node = node.parent
-    print("POST PROCESSED PATH") 
-    input('Press enter to resample the optimal path')
+    best_sol = gnode 
+    best_path = []
+    fails = 0
+    while True:
+        PostProcess(gnode)
+        plt.cla()
+        Visual = Visualization()
+        # Show the start/goal states.
+        startstate.Draw('ro')
+        goalstate.Draw('bo')
+        Visual.ShowFigure()
+        node = gnode
+        path = []
+        while node.parent is not None:
+            path.append(node)
+            node.Draw('g-', linewidth=2)
+            plt.plot(node.state.x, node.state.y, 'co', markersize=3)
+            node = node.parent
+        if gnode.creach <= best_sol.creach:
+            best_sol = gnode
+            best_path = path
+            print('NEW BEST SOLUTION COST: ', best_sol.creach)
+        else:
+            fails += 1
+            print('WORSE PATH FOUND (cost: ', gnode.creach, ') REVERTING TO OPTIMAL SOLUTION')
 
-    print('length of path: ', len(path))
-    # "Tube" resampling of post-processed path
-    r = 0.5 # height of rectangle 
-    # Restart the tree
-    tree = [Node(startstate, None)]
-    gnode = RRT_Rect(tree, startstate, goalstate, Nmax, r, path)
-    plt.cla()
-    Visual = Visualization()
-    # Show the start/goal states.
-    startstate.Draw('ro')
-    goalstate.Draw('bo')
-    Visual.ShowFigure()
-    node = gnode
-    while node.parent is not None:
-        path.append(node)
-        node.Draw('g-', linewidth=2)
-        plt.plot(node.state.x, node.state.y, 'co', markersize=3)
-        node = node.parent
-    input('Press enter to quit')
-     
+        print("POST PROCESSED PATH") 
+        input('Press enter to resample the optimal path')
+
+        if fails > 3:
+            print("PATH COST NOT REDUCED. Reverting back to last best solution...")
+            print('BEST SOL: ', best_sol.creach)
+            plt.cla()
+            Visual = Visualization()
+            # Show the start/goal states.
+            startstate.Draw('ro')
+            goalstate.Draw('bo')
+            Visual.ShowFigure()
+            node = best_sol 
+            while node.parent is not None:
+                node.Draw('g-', linewidth=2)
+                plt.plot(node.state.x, node.state.y, 'co', markersize=3)
+                node = node.parent
+            input('Press enter to quit...')
+            return
+
+        # "Tube" resampling of post-processed path
+        r = 0.25 # height of rectangle 
+        # Restart the tree
+        tree = [Node(startstate, None)]
+        gnode = RRT_Rect(tree, startstate, goalstate, Nmax, r, best_path)
+        plt.cla()
+        Visual = Visualization()
+        # Show the start/goal states.
+        startstate.Draw('ro')
+        goalstate.Draw('bo')
+        Visual.ShowFigure()
+        node = gnode
+        while node.parent is not None:
+            path.append(node)
+            node.Draw('b-', linewidth=2)
+            plt.plot(node.state.x, node.state.y, 'co', markersize=3)
+            node = node.parent
+        print('RESAMPLED TUBE PATH')
+        input('Press enter to post process the tube path')
      
 if __name__== "__main__":
     main()
