@@ -26,10 +26,11 @@ from matplotlib.patches import Ellipse
 (goalx,  goaly)  = (13, 5)
 
 # (startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
-(startx, starty) = (7, 5)
-(goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
-while (goalx, goaly) == (startx, starty):
-    (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
+
+# (startx, starty) = (7, 5)
+# (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
+# while (goalx, goaly) == (startx, starty):
+#     (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
 
 dstep = 0.25
 Nmax  = 2000
@@ -69,13 +70,13 @@ def generateObstacles():
 
 # obstacles = ()
 
-# obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
-#              (( 6, 5), ( 7, 7), ( 8, 5)),
-#              (( 6, 9), ( 8, 9), ( 8, 7)),
-#              ((10, 3), (11, 6), (12, 3)))
+obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
+             (( 6, 5), ( 7, 7), ( 8, 5)),
+             (( 6, 9), ( 8, 9), ( 8, 7)),
+             ((10, 3), (11, 6), (12, 3)))
 
 
-obstacles = generateObstacles()
+# obstacles = generateObstacles()
 ######################################################################
 #
 #   Visualization
