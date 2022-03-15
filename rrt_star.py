@@ -26,10 +26,10 @@ from matplotlib.patches import Ellipse
 (goalx,  goaly)  = (13, 5)
 
 # (startx, starty) = (random.randint(xmin, xmax), random.randint(ymin, ymax))
-# (startx, starty) = (7, 5)
-# (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
-# while (goalx, goaly) == (startx, starty):
-#     (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
+(startx, starty) = (7, 5)
+(goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
+while (goalx, goaly) == (startx, starty):
+    (goalx, goaly) = (random.uniform(xmin, xmax), random.uniform(ymin, ymax))
 
 dstep = 0.25
 Nmax  = 2000
@@ -69,13 +69,13 @@ def generateObstacles():
 
 # obstacles = ()
 
-obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
-             (( 6, 5), ( 7, 7), ( 8, 5)),
-             (( 6, 9), ( 8, 9), ( 8, 7)),
-             ((10, 3), (11, 6), (12, 3)))
+# obstacles = ((( 2, 6), ( 3, 2), ( 4, 6)),
+#              (( 6, 5), ( 7, 7), ( 8, 5)),
+#              (( 6, 9), ( 8, 9), ( 8, 7)),
+#              ((10, 3), (11, 6), (12, 3)))
 
 
-# obstacles = generateObstacles()
+obstacles = generateObstacles()
 ######################################################################
 #
 #   Visualization
@@ -342,11 +342,9 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                     best_sol = sols[0]
                     iters = 0
                     print("PATH COST REDUCED!")
-#                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters >= 3):
-                if True:
+                if (goalnode.creach - np.sqrt(startstate.DistSquared(goalstate)) < 0.001 or iters >= 3):
                     return best_sol
                 else:
-                    # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, goalnode.creach / 2, np.sqrt(goalnode.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
                     draw_ellipse((startx, starty), (goalx, goaly), goalnode.creach, np.sqrt(goalnode.creach ** 2 - startstate.DistSquared(goalstate)))
                     print("The next cost upper bound is", sols[0].creach)
                     input("Now sampling in informed subset\n")
@@ -358,7 +356,6 @@ def RRT_Star(tree, startstate, goalstate, Nmax):
                     startstate.Draw('ro')
                     goalstate.Draw('bo')
                     Visual.ShowFigure()
-                    # draw_ellipse((startx + goalx) / 2, (starty + goaly) / 2, best_sol.creach / 2, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)) / 2)
                     draw_ellipse((startx, starty), (goalx, goaly), best_sol.creach, np.sqrt(best_sol.creach ** 2 - startstate.DistSquared(goalstate)))
 
 
